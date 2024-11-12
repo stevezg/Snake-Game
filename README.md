@@ -1,17 +1,14 @@
 # Snake Game
 
-![Game Banner](path-to-your-banner-image.png)
-
 ## Description
 
-Experience the classic **Snake Game** enhanced with modern features like high score tracking and adjustable difficulty levels. Built with **HTML**, **CSS**, and **JavaScript**, this browser-based game offers smooth controls and a visually appealing interface.
+Experience the classic **Snake Game** enhanced with modern features like high score tracking and adjustable difficulty levels. Built with **HTML**, **CSS**, and **JavaScript**.
 
 ## Features
 
 - **Responsive Controls:** Use **W**, **A**, **S**, **D** keys or **Arrow Keys** for seamless movement.
 - **High Score Tracking:** Your best score is saved automatically using the browser's local storage.
 - **Difficulty Levels:** Choose between **Easy**, **Medium**, and **Hard** to adjust game speed.
-- **Modern Design:** A clean and large playground ensures an enjoyable gaming experience.
 - **Single HTML File:** Easy to deploy and share with all assets embedded.
 
 ## Gameplay
@@ -67,16 +64,8 @@ No installation required! Simply open the `snake_game.html` file in your preferr
 
 ## Screenshots
 
-![Start Screen](path-to-your-start-screen-image.png)
+![Start Screen](/snake.png)
 _Start screen with instructions._
-
-![Gameplay](path-to-your-gameplay-image.png)
-_Snake in action during gameplay._
-
-![Game Over](path-to-your-game-over-image.png)
-_Game over screen displaying score and high score._
-
-_Replace the `path-to-your-...-image.png` with the actual paths to your images._
 
 ## License
 
@@ -85,4 +74,3 @@ This project is licensed under the [MIT License](LICENSE).
 ## Acknowledgements
 
 - Inspired by the classic Snake game.
-- Thanks to the open-source community for invaluable resources and support.
