@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Snake Game with High Score and Difficulty Settings</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #2c3e50;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+        color: #ecf0f1;
+      }
+      #game-container {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+      }
+      canvas {
+        background-color: #34495e;
+        display: block;
+        border: 2px solid #ecf0f1;
+      }
+      #controls {
+        margin-left: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .difficulty-button {
+        background-color: #2980b9;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        margin: 10px 0;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+      }
+      .difficulty-button:hover {
+        background-color: #3498db;
+      }
+      .active {
+        background-color: #e74c3c !important;
+      }
+      #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 800px;
+        height: 600px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        background: rgba(44, 62, 80, 0.8);
+        color: #ecf0f1;
+        font-size: 24px;
+        display: none;
+        text-align: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      #scoreboard {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 20px;
+        color: #ecf0f1;
+      }
+      #scoreboard div {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container">
+      <div style="position: relative">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="overlay">
+          <div>Press <strong>Spacebar</strong> to Start/Restart</div>
+          <div>
+            Use <strong>W</strong>, <strong>A</strong>, <strong>S</strong>,
+            <strong>D</strong> or Arrow Keys to Move
+          </div>
+        </div>
+        <div id="scoreboard">
+          <div>Score: <span id="score">0</span></div>
+          <div>High Score: <span id="highScore">0</span></div>
+        </div>
+      </div>
+      <div id="controls">
+        <button class="difficulty-button active" data-speed="100">Easy</button>
+        <button class="difficulty-button" data-speed="75">Medium</button>
+        <button class="difficulty-button" data-speed="50">Hard</button>
+      </div>
+    </div>
+
+    <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const overlay = document.getElementById("overlay");
+      const scoreElement = document.getElementById("score");
+      const highScoreElement = document.getElementById("highScore");
+      const difficultyButtons = document.querySelectorAll(".difficulty-button");
+
+      const gridSize = 20;
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+
+      let snake = [];
+      let direction = { x: 0, y: 0 };
+      let nextDirection = { x: 0, y: 0 };
+      let food = {};
+      let gameInterval;
+      let score = 0;
+      let gameRunning = false;
+      let highScore = 0;
+      let gameSpeed = 100; // Default to Easy
+
+      // Initialize the game
+      function init() {
+        snake = [
+          {
+            x: Math.floor(canvasWidth / gridSize / 2),
+            y: Math.floor(canvasHeight / gridSize / 2),
+          },
+        ];
+        direction = getRandomDirection();
+        nextDirection = { ...direction };
+        placeFood();
+        score = 0;
+        scoreElement.textContent = `${score}`;
+        loadHighScore();
+      }
+
+      // Get a random initial direction
+      function getRandomDirection() {
+        const dirs = [
+          { x: 1, y: 0 },
+          { x: -1, y: 0 },
+          { x: 0, y: 1 },
+          { x: 0, y: -1 },
+        ];
+        return dirs[Math.floor(Math.random() * dirs.length)];
+      }
+
+      // Place food at a random position not occupied by the snake
+      function placeFood() {
+        while (true) {
+          const x = Math.floor(Math.random() * (canvasWidth / gridSize));
+          const y = Math.floor(Math.random() * (canvasHeight / gridSize));
+          if (!snake.some((segment) => segment.x === x && segment.y === y)) {
+            food = { x, y };
+            break;
+          }
+        }
+      }
+
+      // Handle key presses
+      document.addEventListener("keydown", (e) => {
+        if (e.code === "Space") {
+          if (!gameRunning) {
+            startGame();
+          }
+          // If the game is running, do nothing on Spacebar press
+          return;
+        }
+        if (!gameRunning) return;
+
+        switch (e.key.toLowerCase()) {
+          case "w":
+          case "arrowup":
+            if (direction.y === 0) {
+              nextDirection = { x: 0, y: -1 };
+            }
+            break;
+          case "a":
+          case "arrowleft":
+            if (direction.x === 0) {
+              nextDirection = { x: -1, y: 0 };
+            }
+            break;
+          case "s":
+          case "arrowdown":
+            if (direction.y === 0) {
+              nextDirection = { x: 0, y: 1 };
+            }
+            break;
+          case "d":
+          case "arrowright":
+            if (direction.x === 0) {
+              nextDirection = { x: 1, y: 0 };
+            }
+            break;
+        }
+      });
+
+      // Handle difficulty button clicks
+      difficultyButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          // Remove active class from all buttons
+          difficultyButtons.forEach((btn) => btn.classList.remove("active"));
+          // Add active class to the clicked button
+          button.classList.add("active");
+          // Set game speed based on data attribute
+          gameSpeed = parseInt(button.getAttribute("data-speed"), 10);
+          // If game is running, restart interval with new speed
+          if (gameRunning) {
+            clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, gameSpeed);
+          }
+        });
+      });
+
+      // Start the game
+      function startGame() {
+        overlay.style.display = "none";
+        init();
+        gameInterval = setInterval(gameLoop, gameSpeed);
+        gameRunning = true;
+      }
+
+      // Restart the game
+      function restartGame() {
+        clearInterval(gameInterval);
+        init();
+        gameInterval = setInterval(gameLoop, gameSpeed);
+        overlay.style.display = "none";
+        gameRunning = true;
+      }
+
+      // End the game
+      function endGame() {
+        clearInterval(gameInterval);
+        updateHighScore();
+        overlay.style.display = "flex";
+        overlay.innerHTML = `
+                <div>Game Over!</div>
+                <div>Score: ${score}</div>
+                <div>High Score: ${highScore}</div>
+                <div>Press <strong>Spacebar</strong> to Restart</div>
+            `;
+        gameRunning = false;
+      }
+
+      // Main game loop
+      function gameLoop() {
+        // Update direction
+        direction = nextDirection;
+
+        // Calculate new head position
+        const newHead = {
+          x: snake[0].x + direction.x,
+          y: snake[0].y + direction.y,
+        };
+
+        // Check collisions with walls
+        if (
+          newHead.x < 0 ||
+          newHead.x >= canvasWidth / gridSize ||
+          newHead.y < 0 ||
+          newHead.y >= canvasHeight / gridSize
+        ) {
+          endGame();
+          return;
+        }
+
+        // Check collisions with itself
+        if (
+          snake.some(
+            (segment) => segment.x === newHead.x && segment.y === newHead.y
+          )
+        ) {
+          endGame();
+          return;
+        }
+
+        // Add new head to the snake
+        snake.unshift(newHead);
+
+        // Check if food is eaten
+        if (newHead.x === food.x && newHead.y === food.y) {
+          score++;
+          scoreElement.textContent = `${score}`;
+          placeFood();
+          // Update high score in real-time if needed
+          if (score > highScore) {
+            highScore = score;
+            highScoreElement.textContent = `${highScore}`;
+            localStorage.setItem("snakeHighScore", highScore);
+          }
+        } else {
+          // Remove the tail
+          snake.pop();
+        }
+
+        // Render the game
+        render();
+      }
+
+      // Render the game state
+      function render() {
+        // Clear the canvas
+        ctx.fillStyle = "#34495e";
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Draw the food
+        ctx.fillStyle = "#e74c3c";
+        ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+
+        // Draw the snake
+        ctx.fillStyle = "#2ecc71";
+        snake.forEach((segment, index) => {
+          ctx.fillRect(
+            segment.x * gridSize,
+            segment.y * gridSize,
+            gridSize - 2,
+            gridSize - 2
+          );
+        });
+      }
+
+      // Load high score from localStorage
+      function loadHighScore() {
+        const storedHighScore = localStorage.getItem("snakeHighScore");
+        if (storedHighScore !== null) {
+          highScore = parseInt(storedHighScore, 10);
+          highScoreElement.textContent = `${highScore}`;
+        } else {
+          highScore = 0;
+          highScoreElement.textContent = `${highScore}`;
+        }
+      }
+
+      // Update high score in localStorage if current score is higher
+      function updateHighScore() {
+        if (score > highScore) {
+          highScore = score;
+          highScoreElement.textContent = `${highScore}`;
+          localStorage.setItem("snakeHighScore", highScore);
+        }
+      }
+
+      // Show the start screen initially
+      overlay.style.display = "flex";
+    </script>
+  </body>
+</html>
